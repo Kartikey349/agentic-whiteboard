@@ -75,7 +75,10 @@ export function AppSidebar() {
             <Progress value={66} className={"h-2 mt-2"} />
         </div>
         <div className="flex items-center gap-2 p-4 rounded-md border">
-            <Image src={user?.imageUrl!} alt="Uses Image" width={40} height={40} className="rounded-full"/>
+            {
+                user?.imageUrl && <Image src={user?.imageUrl} alt="Uses Image" width={40} height={40} className="rounded-full"/>
+            }
+            
             <h2 className="font-semibold">{user?.firstName} {user?.lastName}</h2>
         </div>
       </SidebarFooter>
