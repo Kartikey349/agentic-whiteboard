@@ -9,8 +9,8 @@ import { Toaster } from '@/components/ui/toast';
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: "Next.js Premium Startup Boilerplate",
-  description: "Created using the ultimate interactive Next.js stack generator CLI.",
+  title: "Drawgon",
+  description: "Turn your idea into Diagrams and visuals",
 };
 
 const isClerkConfigured = 
