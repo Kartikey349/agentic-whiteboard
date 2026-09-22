@@ -11,26 +11,48 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/toast"
-import { Plus } from "lucide-react"
+import axios from "axios"
+import { Loader, Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 const CreateNewBoardDialogue = () => {
 
     const [workspaceName, setWorkspaceName] = useState("")
+    const [loading, setLoading] = useState(false)
+    const [dialog, setDialog] = useState(false)
+    const route = useRouter()
 
-    const handleCreateBoard = () => {
+    const handleCreateBoard = async() => {
         if(workspaceName.trim() === "" || workspaceName?.length > 30){
             toast.add({
                 type: "error",
                 title: "Invalid Workspace Name",
                 description: "Please enter a valid workspace name (1-30 characters)"
             })
+            return;
         }
+        setLoading(true)
+
+        const projectId = crypto.randomUUID()
+        const res = await axios.post("/api/projects", {
+            projectName: workspaceName,
+            projectId: projectId
+        })
+        
+        console.log(res.data)
+        toast.add({
+            type: "Success",
+            title: "Workspace created"
+        })
+        setLoading(false)
+        setDialog(false)
+        route.push("/workspace/" + projectId)
     }
 
   return (
     <div>
-        <Dialog>
+        <Dialog open={dialog} onOpenChange={setDialog}>
             <DialogTrigger render={<Button className="w-full" />}>
                <Plus /> Create New Board
             </DialogTrigger>
@@ -48,8 +70,9 @@ const CreateNewBoardDialogue = () => {
                 <DialogFooter>
                     <DialogClose render={<Button variant={"outline"} />}>Cancel
                     </DialogClose>
-                    
-                    {workspaceName.trim().length > 0 && <Button onClick={handleCreateBoard}>Create</Button>}
+
+                    {workspaceName.trim().length > 0 && <Button onClick={handleCreateBoard}
+                    >{loading && <Loader className="animate-spin" />}Create</Button>}
                  </DialogFooter>
             </DialogContent>
 
