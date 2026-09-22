@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button"
 import { Folder } from "lucide-react"
 import { useState } from "react"
+import CreateNewBoardDialogue from "./CreateNewBoardDialogue"
 
 const ProjectList = () => {
     const [projectList, setProjectList] = useState([])
@@ -13,7 +14,7 @@ const ProjectList = () => {
                     <Folder className="h-15 w-15 text-blue-600" />
                     <h2 className="text-2xl font-bold">No Boards found</h2>
                     <p className="text-gray-600 font-semibold">Create Your first Board to start brainstorming and Planning!!</p>
-                    <Button>+ Create New Board</Button>
+                    <CreateNewBoardDialogue />
                 </div>
             ): 
             (
