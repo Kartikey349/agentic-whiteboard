@@ -21,6 +21,7 @@ import {
   Type,
 } from "lucide-react";
 import { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+import FloatingProperties from "./FloatingProperties";
 
 const tools = [
   {
@@ -84,11 +85,28 @@ const Whiteboard = () => {
     const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null >(null);
 
     const saveTimeRef = useRef<any>(null)
-    const lockRef = useRef(null)
     const {projectId} = useParams()
     const [activeTool, setActiveTool] = useState("selection")
+    const [selectedElement, setSelectedElement] = useState<any>(null)
+    const [canvasState, setCanvasState] = useState<any>(null)
+
 
     const handleCanvasChange = (elements:readonly any[], appState: any, files:any) => {
+
+        setCanvasState(appState)
+
+        const selectedIds = Object.keys(
+            appState.selectedElementIds || {}
+        )
+
+        if(selectedIds.length === 1){
+            const element = elements.find((element) => element.id === selectedIds[0])
+
+            setSelectedElement(element)
+        }else{
+            setSelectedElement(null)
+        }
+
         if(saveTimeRef?.current){
             clearTimeout(saveTimeRef.current)
         }
@@ -117,6 +135,132 @@ const Whiteboard = () => {
         })
     }
 
+    const getFloatingPosition = () => {
+        if(!selectedElement || !canvasState){
+            return {left: 0, top: 0}
+        }
+
+        const zoom = canvasState.zoom?.value ?? 1;
+
+        const scrollX = canvasState.scrollX ?? 0;
+
+        const scrollY = canvasState.scrollY ?? 0;
+
+        // Center of selected element
+        const centerX = selectedElement.x + selectedElement.width / 2;
+
+        // Convert Excalidraw coordinates
+        // into browser coordinates
+        const screenX = (centerX + scrollX) * zoom;
+
+        const screenY = (selectedElement.y + scrollY) * zoom;
+
+        return {
+        left: screenX,
+        top: screenY - 60,
+        };
+    }
+
+    const handlePropertyChange = (property: string, value: any) => {
+        if(!excalidrawAPI || !selectedElement) return;
+
+        const elements = excalidrawAPI.getSceneElements();
+        const updatedElements = elements.map((element) => {
+            if(element.id != selectedElement.id){
+                return element;
+            }
+
+            return {
+                ...element,
+                [property]: value,
+                version: element.version + 1,
+                updated: Date.now()
+            }
+        })
+
+        excalidrawAPI.updateScene({
+           elements: updatedElements
+        })
+    }
+
+    const handleDeleteElement = () => {
+        if(!excalidrawAPI || !selectedElement) return;
+
+        const elements = excalidrawAPI.getSceneElements();
+        const updatedElements = elements.map((element) => {
+            if(element.id === selectedElement.id){
+                return {
+                    ...element,
+                    isDeleted: true,
+                    version: element.version + 1,
+                    updated: Date.now()
+                }
+            }
+            return element
+        })
+        excalidrawAPI.updateScene({
+            elements: updatedElements
+        })
+
+        setSelectedElement(null)
+    }
+
+    const handleDuplicateElement = () => {
+        if(!excalidrawAPI || !selectedElement) return;
+
+        const elements = excalidrawAPI.getSceneElements()
+        const duplicateElement = {
+            ...selectedElement,
+            id: crypto.randomUUID(),
+            x:selectedElement.x + 20,
+            y: selectedElement.y + 20,
+            seed: Math.floor(Math.random() * 1000000),
+            version: 1,
+            updated: Date.now(),
+            isDeleted: false
+        }
+
+        excalidrawAPI.updateScene({
+            elements: [
+                ...elements,
+                duplicateElement
+            ]
+        })
+    }
+    
+    const handleBringFrontBack = (type: string) => {
+        if(!excalidrawAPI || !selectedElement) return;
+
+        const elements = excalidrawAPI.getSceneElements()
+
+        const selected = elements.find((element) => element.id === selectedElement.id)
+
+        if(!selected) return;
+
+        const remainingElements = elements.filter((elements) => elements.id !== selectedElement.id)
+
+
+        if(type === "front"){
+            excalidrawAPI.updateScene({
+                elements: [
+                    // @ts-ignore
+                    ...remainingElements,
+                    selected
+                ]
+            })
+        }else{
+            excalidrawAPI.updateScene({
+                elements: [
+                    selected,
+                    // @ts-ignore
+                    ...remainingElements
+                ]
+            })
+        }
+    }
+
+    const floatingPosition = getFloatingPosition()
+
   return (
    <div style={{ height: "90vh" }}>
         <Excalidraw
@@ -139,6 +283,14 @@ const Whiteboard = () => {
                 })
             }
         </div>
+            <FloatingProperties selectedElement={selectedElement} position={floatingPosition}
+            onPropertyChange={(property, value) => handlePropertyChange(property, value)}
+            onDelete={() => handleDeleteElement()}
+            onDuplicate={() => handleDuplicateElement()}
+            onBringToFront={() => handleBringFrontBack('front')}
+            onSendToBack={() => handleBringFrontBack('back')}
+            />
+
       </div>
   )
 }
