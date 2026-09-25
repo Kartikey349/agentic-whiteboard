@@ -90,15 +90,17 @@ const AI_TOOLS = [
   },
 ];
 
+const MAX_PROMPT = 400;
 export const AIFloatingSidebar = ({excalidrawAPI, onClose} : Props) => {
 
     const [selectedTool, setSelectedTool] = useState("diagram")
-    const AI_PLACEHOLDER_ID = 'ai-generation-placeholder'
     const [loading, setLoading] = useState(false)
     const [userInput, setUserInput] = useState("")
 
     const currentAiTool =
     AI_TOOLS.find((tool) => tool.id === selectedTool) ?? AI_TOOLS[0];
+    const [error, setError] = useState<string | null>(null);
+    const canGenerate = userInput.trim().length > 0 && !loading;
 
 
     const getEmptyCanvasPosition = () => {
@@ -1979,20 +1981,14 @@ const renderAiDiagram = (diagramResult: any) => {
       throw new Error("AI tool not found");
     }
 
-    console.log("Calling API...");
-
     const result = await axios.post("/api/ai", {
       userInput: userInput.trim(),
       type: currentAiTool.name,
       systemPrompt: currentAiTool.prompt,
     });
 
-    console.log("API RESPONSE:", result.data);
-
     // API already returns parsed diagramResult
     const diagramResult = result.data.diagramResult;
-
-    console.log("PARSED DIAGRAM:", diagramResult);
 
     if (!diagramResult) {
       throw new Error("AI returned an invalid diagram");
@@ -2000,14 +1996,11 @@ const renderAiDiagram = (diagramResult: any) => {
 
     renderAiDiagram(diagramResult);
 
-    console.log("Diagram rendered successfully");
+  } catch (err) {
+    console.error("AI GENERATION ERROR:", err);
 
-  } catch (error) {
-    console.error("AI GENERATION ERROR:", error);
-
-    if (axios.isAxiosError(error)) {
-      console.error("Backend response:", error.response?.data);
-      console.error("Status:", error.response?.status);
+    if (axios.isAxiosError(err)) {
+      setError(err?.response?.data?.error ?? "Generation failed. Try again.");
     }
 
     removeAiPlaceholder();
@@ -2026,6 +2019,13 @@ const renderAiDiagram = (diagramResult: any) => {
 
         excalidrawAPI.updateScene({ elements: updatedElements });
     };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        onClickGenerate();
+        }
+  };
 
     return (
     <div
@@ -2108,25 +2108,25 @@ const renderAiDiagram = (diagramResult: any) => {
       <div className="shrink-0 border-t border-gray-100 bg-gray-50/60 p-4">
         <Textarea
           value={userInput}
-        //   maxLength={MAX_PROMPT}
+          maxLength={MAX_PROMPT}
           disabled={loading}
           onChange={(event) => setUserInput(event.target.value)}
-        //   onKeyDown={handleKeyDown}
+          onKeyDown={handleKeyDown}
           placeholder={currentAiTool.placeholder}
           className="min-h-21 resize-none border-gray-200 bg-white text-sm
         placeholder:text-gray-400 focus-visible:ring-violet-500/30"
         />
 
-        {/* {error && <p className="mt-2 text-xs text-red-600">{error}</p>} */}
+        {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
 
         <div className="mt-3 flex items-center justify-between gap-3">
           <span className="text-xs tabular-nums text-gray-400">
-            {/* {userInput.length}/{MAX_PROMPT} */}
+            {userInput.length}/{MAX_PROMPT}
           </span>
 
           <Button
             onClick={onClickGenerate}
-            // disabled={!canGenerate}
+            disabled={!canGenerate}
             className="flex items-center gap-2"
           >
             {loading ? (
