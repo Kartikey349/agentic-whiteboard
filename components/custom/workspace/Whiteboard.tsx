@@ -22,6 +22,9 @@ import {
 } from "lucide-react";
 import { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import FloatingProperties from "./FloatingProperties";
+import { Button } from "@/components/ui/button";
+import { AIFloatingSidebar } from "./AIFloatingSidebar";
+
 
 const tools = [
   {
@@ -89,6 +92,7 @@ const Whiteboard = () => {
     const [activeTool, setActiveTool] = useState("selection")
     const [selectedElement, setSelectedElement] = useState<any>(null)
     const [canvasState, setCanvasState] = useState<any>(null)
+    const [showAiSidebar, setShowAiSidebar] = useState(false)
 
 
     const handleCanvasChange = (elements:readonly any[], appState: any, files:any) => {
@@ -262,7 +266,7 @@ const Whiteboard = () => {
     const floatingPosition = getFloatingPosition()
 
   return (
-   <div style={{ height: "90vh" }}>
+   <div className="h-[92vh]">
         <Excalidraw
         onChange={handleCanvasChange}
         //@ts-ignore
@@ -291,7 +295,20 @@ const Whiteboard = () => {
             onSendToBack={() => handleBringFrontBack('back')}
             />
 
-      </div>
+        <div className="absolute right-15 bottom-3.5 z-50">
+            <Button size={"lg"} onClick={() => setShowAiSidebar(!showAiSidebar)}>
+            <Sparkles /> AI
+            </Button>
+        </div>
+
+      {showAiSidebar && (
+        <AIFloatingSidebar
+          excalidrawAPI={excalidrawAPI}
+          onClose={() => setShowAiSidebar(false)}
+        />
+      )}
+
+    </div>
   )
 }
 
