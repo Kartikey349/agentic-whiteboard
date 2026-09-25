@@ -7,7 +7,10 @@ const WelcomeBanner = () => {
     const {user} = useUser()
   return (
     <div>
-        <div className="p-10 m-5 border rounded-2xl bg-linear-to-r from-gray-200 to-gray-400">
+        <div className="p-10 m-5 border rounded-2xl
+        bg-linear-to-r from-gray-200 to-gray-400
+        dark:from-gray-800 dark:to-gray-950
+        dark:border-gray-700">
             <h2 className="text-2xl font-bold">
                 Hello, {user?.fullName}
             </h2>

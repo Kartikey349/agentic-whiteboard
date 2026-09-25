@@ -8,11 +8,9 @@ import {
   SidebarHeader,
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { Archive, LayoutGrid, Settings, Sparkles, Users } from "lucide-react"
 import { usePathname } from "next/navigation"
-import { Progress } from "@/components/ui/progress"
 import { useUser } from "@clerk/nextjs"
 import CreateNewBoardDialogue from "./CreateNewBoardDialogue"
 
@@ -69,12 +67,6 @@ export function AppSidebar() {
 
       <SidebarFooter>
             <CreateNewBoardDialogue />
-        <div className="p-4 my-3 border rounded-md">
-            <h2 className="text flex justify-between">
-                2 Files Created <span>total 3</span>
-            </h2>
-            <Progress value={66} className={"h-2 mt-2"} />
-        </div>
         <div className="flex items-center gap-2 p-4 rounded-md border">
             {
                 user?.imageUrl && <Image src={user?.imageUrl} alt="Uses Image" width={40} height={40} className="rounded-full"/>

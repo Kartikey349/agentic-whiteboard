@@ -5,6 +5,7 @@ import Provider from "./provider"
 import { Inter } from "next/font/google"
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toast"
+import { ThemeProvider } from "@/components/theme-provider"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -49,7 +50,9 @@ export default function RootLayout({
       >
         {isClerkConfigured ? (
           <ClerkProvider>
-            {content}
+            <ThemeProvider>
+              {content}
+            </ThemeProvider>
           </ClerkProvider>
         ) : (
           content
