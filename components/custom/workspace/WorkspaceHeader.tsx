@@ -1,13 +1,14 @@
 import Image from "next/image"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Save, Share } from "lucide-react"
+import { Download, Save, Share } from "lucide-react"
 
 type Prop = {
-    selectedTab: any
+    selectedTab: any,
+    onExport: any
 }
 
-const WorkspaceHeader = ({selectedTab}: Prop) => {
+const WorkspaceHeader = ({selectedTab, onExport}: Prop) => {
   return (
     <div className="p-3 border-b flex justify-between">
         <div className="flex gap-2 items-center">
@@ -25,6 +26,7 @@ const WorkspaceHeader = ({selectedTab}: Prop) => {
         <div className="flex gap-2">
             <Button><Save /> Save</Button>
             <Button variant={"outline"}><Share /> Share</Button>
+            <Button onClick={onExport}><Download /> Export</Button>
         </div>
     </div>
   )

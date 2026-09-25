@@ -82,8 +82,11 @@ const tools = [
     color: "text-rose-500",
   },
 ];
+type Props = {
+    onApiReady: (api: ExcalidrawImperativeAPI) => void
+}
 
-const Whiteboard = () => {
+const Whiteboard = ({onApiReady} : Props) => {
 
     const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null >(null);
 
@@ -270,7 +273,7 @@ const Whiteboard = () => {
         <Excalidraw
         onChange={handleCanvasChange}
         //@ts-ignore
-        excalidrawAPI={(api)=> setExcalidrawAPI(api)}
+        excalidrawAPI={(api)=> {setExcalidrawAPI(api); onApiReady(api)}}
         />
 
         <div className="absolute left-4 top-1/2 z-50 -translate-y-1/2 flex flex-col gap-1 rounded-2xl bg-white border p-1.5 shadow-xl">
