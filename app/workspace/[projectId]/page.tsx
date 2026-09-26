@@ -55,7 +55,7 @@ const Workspace = () => {
     try {
 
       const result = await axios.get(
-        "/api/projects?projectId=" +
+        "/api/whiteboard?projectId=" +
           projectId
       );
 

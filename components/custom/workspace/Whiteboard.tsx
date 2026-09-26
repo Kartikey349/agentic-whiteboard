@@ -589,6 +589,7 @@ const Whiteboard = ({
         gap-1
         rounded-2xl
         bg-white
+        dark:bg-gray-900
         border
         p-1.5
         shadow-xl

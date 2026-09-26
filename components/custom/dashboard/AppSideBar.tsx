@@ -13,6 +13,7 @@ import { Archive, LayoutGrid, Settings, Sparkles, Users } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useUser } from "@clerk/nextjs"
 import CreateNewBoardDialogue from "./CreateNewBoardDialogue"
+import Link from "next/link"
 
 export function AppSidebar() {
 
@@ -34,33 +35,20 @@ export function AppSidebar() {
 
         <SidebarGroup>
             <SidebarGroupLabel>My Boards</SidebarGroupLabel>
-            <SidebarMenuButton className="p-5" isActive={path === "/dashboard"}>
+            <Link href={"/dashboard"}><SidebarMenuButton className="p-5" isActive={path === "/dashboard"}>
                 <LayoutGrid />
                 <span>My Files</span>
-            </SidebarMenuButton>
+            </SidebarMenuButton></Link>
 
             <SidebarMenuButton className="p-5 mt-2" isActive={path === "/shared-file"}>
                 <Users />
                 <span>Shared</span>
             </SidebarMenuButton>
 
-            <SidebarMenuButton className="p-5 mt-2" isActive={path === "/archived"}>
+            <Link href={"/dashboard/archived"}><SidebarMenuButton className="p-5 mt-2" isActive={path === "/dashboard/archived"}>
                 <Archive />
                 <span>Archived</span>
-            </SidebarMenuButton>
-        </SidebarGroup>
-
-        <SidebarGroup>
-            <SidebarGroupLabel>Others</SidebarGroupLabel>
-            <SidebarMenuButton className="p-5 mt-2" isActive={path === "/ai"}>
-                <Sparkles />
-                <span>AI Helper</span>
-            </SidebarMenuButton>
-
-            <SidebarMenuButton className="p-5 mt-2" isActive={path === "/settings"}>
-                <Settings />
-                <span>Setting</span>
-            </SidebarMenuButton>
+            </SidebarMenuButton></Link>
         </SidebarGroup>
 
       </SidebarContent>

@@ -2033,13 +2033,15 @@ const renderAiDiagram = (diagramResult: any) => {
       aria-label="AI helper"
       className="absolute bottom-24 right-6 z-50 flex max-h-155 w-95
                  flex-col overflow-hidden rounded-2xl border border-gray-200
-                 bg-white shadow-2xl shadow-gray-900/10"
+                 dark:bg-gray-900
+                 dark:border-gray-700
+                 shadow-2xl shadow-gray-900/10"
     >
       {/* Header */}
       <header className="flex shrink-0 items-start justify-between gap-3 px-5 pb-4 pt-5">
         <div>
-          <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900">
-            <Sparkles size={17} className="text-violet-600" />
+          <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white">
+            <Sparkles size={17} className="text-violet-600 " />
             AI helper
           </h2>
           <p className="mt-1 text-sm text-gray-500">
@@ -2091,7 +2093,7 @@ const renderAiDiagram = (diagramResult: any) => {
                 </span>
 
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-gray-900">
+                  <span className="block truncate text-sm font-medium text-gray-900 dark:text-white">
                     {tool.name}
                   </span>
                   <span className="block truncate text-xs text-gray-500">
@@ -2105,7 +2107,7 @@ const renderAiDiagram = (diagramResult: any) => {
       </div>
 
       {/* Prompt */}
-      <div className="shrink-0 border-t border-gray-100 bg-gray-50/60 p-4">
+      <div className="shrink-0 border-t border-gray-100 bg-gray-50/60 p-4 dark:bg-gray-900">
         <Textarea
           value={userInput}
           maxLength={MAX_PROMPT}

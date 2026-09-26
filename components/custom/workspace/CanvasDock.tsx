@@ -78,6 +78,7 @@ function CanvasDock({ excalidrawApi, aiOpen, onToggleAi }: Props) {
           aria-label={panel === "notes" ? "Add notes" : "Emoji and icons"}
           className="absolute bottom-full left-1/2 mb-3 -translate-x-1/2
                      overflow-hidden rounded-2xl border border-gray-200 bg-white
+                     dark:bg-gray-900
                      shadow-2xl shadow-gray-900/10"
         >
           {panel === "notes" ? (
@@ -91,7 +92,8 @@ function CanvasDock({ excalidrawApi, aiOpen, onToggleAi }: Props) {
       {/* Dock */}
       <div
         className="flex items-center gap-1 rounded-full border border-gray-200
-                   bg-white/90 p-1.5 shadow-xl shadow-gray-900/10 backdrop-blur"
+                   bg-white/90 p-1.5 shadow-xl shadow-gray-900/10 backdrop-blur
+                   dark:bg-gray-900"
       >
         <DockButton
           icon={StickyNote}
@@ -120,7 +122,8 @@ function CanvasDock({ excalidrawApi, aiOpen, onToggleAi }: Props) {
           className={`flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600
                       to-indigo-600 px-4 py-2 text-sm font-medium text-white transition
                       hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50
-                      focus-visible:outline-2 focus-visible:outline-offset-2
+                      focus-visible:outline-2 
+                      focus-visible:outline-offset-2
                       focus-visible:outline-violet-500
                       ${aiOpen ? "ring-2 ring-violet-300" : ""}`}
         >
@@ -153,7 +156,7 @@ function DockButton({
       onClick={onClick}
       className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium
                   text-gray-700 transition hover:bg-gray-100 disabled:opacity-50
-                  focus-visible:outline-2 focus-visible:outline-offset-2
+                  focus-visible:outline-2focus-visible:outline-offset-2
                   focus-visible:outline-violet-500
                   ${active ? "bg-gray-100 text-gray-900" : ""}`}
     >
