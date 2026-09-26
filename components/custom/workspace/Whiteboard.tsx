@@ -1,13 +1,16 @@
-"use client"
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
+import axios from "axios";
+import { useTheme } from "next-themes";
 
 import { toast } from "@/components/ui/toast";
+
 import { Excalidraw } from "@excalidraw/excalidraw";
-import "@excalidraw/excalidraw/index.css"
-import axios from "axios";
-import { useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import "./whiteboard.css"
-import { useTheme } from "next-themes";
+import "@excalidraw/excalidraw/index.css";
+
+import { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
 import {
   ArrowRight,
@@ -24,13 +27,14 @@ import {
   Type,
 } from "lucide-react";
 
-import { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import FloatingProperties from "./FloatingProperties";
 import { Button } from "@/components/ui/button";
 import { AIFloatingSidebar } from "./AIFloatingSidebar";
 import CanvasDock from "./CanvasDock";
+
 import { updateBoundText } from "@/lib/canvas";
 
+import "./whiteboard.css";
 
 const tools = [
   {
@@ -90,18 +94,17 @@ const tools = [
   },
 ];
 
-
 type Props = {
-  onApiReady: (api: ExcalidrawImperativeAPI) => void
-  onSaveReady: (save: () => Promise<void>) => void
+  onApiReady: (api: ExcalidrawImperativeAPI) => void;
+  onSaveReady: (save: () => Promise<void>) => void;
   readOnly?: boolean;
+
   initialCanvas?: {
     elements: any[];
     appState?: any;
     files?: any;
   };
-}
-
+};
 
 const Whiteboard = ({
   onApiReady,
@@ -109,307 +112,336 @@ const Whiteboard = ({
   readOnly,
   initialCanvas,
 }: Props) => {
-
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
 
-  const saveTimeRef = useRef<any>(null)
+  const saveTimeRef = useRef<any>(null);
 
-  const { projectId } = useParams()
+  // Prevent shared canvas from loading more than once
+  const sharedCanvasLoadedRef = useRef(false);
 
-  const [activeTool, setActiveTool] = useState("selection")
+  const { projectId } = useParams();
 
-  const [selectedElement, setSelectedElement] = useState<any>(null)
+  const [activeTool, setActiveTool] = useState("selection");
 
-  const [canvasState, setCanvasState] = useState<any>(null)
+  const [selectedElement, setSelectedElement] =
+    useState<any>(null);
 
-  const [showAiSidebar, setShowAiSidebar] = useState(false)
+  const [canvasState, setCanvasState] =
+    useState<any>(null);
+
+  const [showAiSidebar, setShowAiSidebar] =
+    useState(false);
 
   const { resolvedTheme } = useTheme();
+
+  // =========================================================
+  // SAVE CANVAS
+  // =========================================================
 
   const SaveCanvasChanges = async (
     elements: readonly any[],
     appState: any,
     files: any
   ) => {
-
     await axios.post("/api/whiteboard", {
-      elements: elements,
-      appState: appState,
-      files: files,
-      projectId: projectId
-    })
-  }
+      elements,
+      appState,
+      files,
+      projectId,
+    });
+  };
+
+  // =========================================================
+  // CANVAS CHANGE
+  // =========================================================
 
   const handleCanvasChange = (
     elements: readonly any[],
     appState: any,
     files: any
   ) => {
-
+    // Shared/read-only canvas should never save
     if (readOnly) return;
-    setCanvasState(appState)
 
+    setCanvasState(appState);
 
     const selectedIds = Object.keys(
       appState.selectedElementIds || {}
-    )
+    );
 
     if (selectedIds.length === 1) {
-
       const element = elements.find(
         (element) => element.id === selectedIds[0]
-      )
+      );
 
-      setSelectedElement(element)
-
+      setSelectedElement(element);
     } else {
-
-      setSelectedElement(null)
-
+      setSelectedElement(null);
     }
 
     if (saveTimeRef.current) {
-      clearTimeout(saveTimeRef.current)
+      clearTimeout(saveTimeRef.current);
     }
 
     saveTimeRef.current = setTimeout(async () => {
-
       try {
-
         await SaveCanvasChanges(
           elements,
           appState,
           files
-        )
+        );
 
         toast.add({
           title: "Changes saved",
-          type: "success"
-        })
-
+          type: "success",
+        });
       } catch (error) {
-
-        console.error("AUTO SAVE ERROR:", error)
+        console.error(
+          "AUTO SAVE ERROR:",
+          error
+        );
 
         toast.add({
           title: "Failed to save changes",
-          type: "error"
-        })
-
+          type: "error",
+        });
       }
+    }, 10000);
+  };
 
-    }, 10000)
-
-  }
-
+  // =========================================================
+  // MANUAL SAVE
+  // =========================================================
 
   const handleSave = async () => {
-
     if (!excalidrawAPI) {
-      return
+      return;
     }
 
+    const elements =
+      excalidrawAPI.getSceneElements();
 
-    const elements = excalidrawAPI.getSceneElements()
+    const appState =
+      excalidrawAPI.getAppState();
 
-    const appState = excalidrawAPI.getAppState()
-
-    const files = excalidrawAPI.getFiles()
-
+    const files =
+      excalidrawAPI.getFiles();
 
     try {
-
       await SaveCanvasChanges(
         elements,
         appState,
         files
-      )
+      );
 
-
-      // Since user manually saved,
-      // cancel pending autosave timer
-
+      // Cancel pending autosave timer
       if (saveTimeRef.current) {
-        clearTimeout(saveTimeRef.current)
-        saveTimeRef.current = null
+        clearTimeout(saveTimeRef.current);
+        saveTimeRef.current = null;
       }
-
 
       toast.add({
         title: "Changes saved",
-        type: "success"
-      })
-
+        type: "success",
+      });
     } catch (error) {
-
-      console.error("MANUAL SAVE ERROR:", error)
+      console.error(
+        "MANUAL SAVE ERROR:",
+        error
+      );
 
       toast.add({
         title: "Failed to save changes",
-        type: "error"
-      })
-
+        type: "error",
+      });
     }
+  };
 
-  }
-
-
+  // =========================================================
+  // SAVE CALLBACK
+  // =========================================================
 
   useEffect(() => {
-
     if (excalidrawAPI) {
-      onSaveReady(handleSave)
+      onSaveReady(handleSave);
     }
+  }, [excalidrawAPI]);
 
-  }, [excalidrawAPI])
+  // =========================================================
+  // LOAD SHARED CANVAS
+  // =========================================================
 
-
-  const changeTool = (tool: any) => {
-
-    if (!excalidrawAPI) return;
-
-    setActiveTool(tool)
-
-    excalidrawAPI.setActiveTool({
-      type: tool
-    })
-
+ useEffect(() => {
+  if (!readOnly || !excalidrawAPI || !initialCanvas) {
+    return;
   }
 
+  const elements = initialCanvas.elements || [];
+
+  if (elements.length === 0) {
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      excalidrawAPI.scrollToContent(undefined, {
+        fitToViewport: true,
+        viewportZoomFactor: 0.8,
+      });
+    });
+  });
+}, [readOnly, excalidrawAPI, initialCanvas]);
+
+  // =========================================================
+  // CHANGE TOOL
+  // =========================================================
+
+  const changeTool = (tool: any) => {
+    if (!excalidrawAPI) return;
+
+    setActiveTool(tool);
+
+    excalidrawAPI.setActiveTool({
+      type: tool,
+    });
+  };
+
+  // =========================================================
+  // FLOATING PROPERTY POSITION
+  // =========================================================
 
   const getFloatingPosition = () => {
-
     if (!selectedElement || !canvasState) {
       return {
         left: 0,
-        top: 0
-      }
+        top: 0,
+      };
     }
 
+    const zoom =
+      canvasState.zoom?.value ?? 1;
 
-    const zoom = canvasState.zoom?.value ?? 1
+    const scrollX =
+      canvasState.scrollX ?? 0;
 
-    const scrollX = canvasState.scrollX ?? 0
-
-    const scrollY = canvasState.scrollY ?? 0
-
+    const scrollY =
+      canvasState.scrollY ?? 0;
 
     // Center of selected element
-
     const centerX =
       selectedElement.x +
-      selectedElement.width / 2
-
+      selectedElement.width / 2;
 
     // Convert Excalidraw coordinates
     // into browser coordinates
-
     const screenX =
-      (centerX + scrollX) * zoom
+      (centerX + scrollX) * zoom;
 
     const screenY =
-      (selectedElement.y + scrollY) * zoom
-
+      (selectedElement.y + scrollY) * zoom;
 
     return {
       left: screenX,
       top: screenY - 60,
-    }
+    };
+  };
 
-  }
-
+  // =========================================================
+  // PROPERTY CHANGE
+  // =========================================================
 
   const handlePropertyChange = (
     property: string,
     value: any
   ) => {
-
-    if (!excalidrawAPI || !selectedElement) {
-      return
+    if (
+      !excalidrawAPI ||
+      !selectedElement
+    ) {
+      return;
     }
 
-
     const elements =
-      excalidrawAPI.getSceneElements()
+      excalidrawAPI.getSceneElements();
 
-
-    const updatedElements =
-      elements.map((element) => {
-
-        if (element.id !== selectedElement.id) {
-          return element
+    const updatedElements = elements.map(
+      (element) => {
+        if (
+          element.id !== selectedElement.id
+        ) {
+          return element;
         }
-
 
         return {
           ...element,
           [property]: value,
           version: element.version + 1,
-          updated: Date.now()
-        }
-
-      })
-
+          updated: Date.now(),
+        };
+      }
+    );
 
     excalidrawAPI.updateScene({
-      elements: updatedElements
-    })
+      elements: updatedElements,
+    });
+  };
 
-  }
+  // =========================================================
+  // DELETE ELEMENT
+  // =========================================================
 
   const handleDeleteElement = () => {
-
-    if (!excalidrawAPI || !selectedElement) {
-      return
+    if (
+      !excalidrawAPI ||
+      !selectedElement
+    ) {
+      return;
     }
 
-
     const elements =
-      excalidrawAPI.getSceneElements()
+      excalidrawAPI.getSceneElements();
 
-
-    const updatedElements =
-      elements.map((element) => {
-
-        if (element.id === selectedElement.id) {
-
+    const updatedElements = elements.map(
+      (element) => {
+        if (
+          element.id === selectedElement.id
+        ) {
           return {
             ...element,
             isDeleted: true,
             version: element.version + 1,
-            updated: Date.now()
-          }
-
+            updated: Date.now(),
+          };
         }
 
-        return element
-
-      })
-
+        return element;
+      }
+    );
 
     excalidrawAPI.updateScene({
-      elements: updatedElements
-    })
+      elements: updatedElements,
+    });
 
+    setSelectedElement(null);
+  };
 
-    setSelectedElement(null)
-
-  }
+  // =========================================================
+  // DUPLICATE ELEMENT
+  // =========================================================
 
   const handleDuplicateElement = () => {
-
-    if (!excalidrawAPI || !selectedElement) {
-      return
+    if (
+      !excalidrawAPI ||
+      !selectedElement
+    ) {
+      return;
     }
 
-
     const elements =
-      excalidrawAPI.getSceneElements()
-
+      excalidrawAPI.getSceneElements();
 
     const duplicateElement = {
-
       ...selectedElement,
 
       id: crypto.randomUUID(),
@@ -426,101 +458,90 @@ const Whiteboard = ({
 
       updated: Date.now(),
 
-      isDeleted: false
-
-    }
-
+      isDeleted: false,
+    };
 
     excalidrawAPI.updateScene({
-
       elements: [
         ...elements,
-        duplicateElement
-      ]
+        duplicateElement,
+      ],
+    });
+  };
 
-    })
-
-  }
+  // =========================================================
+  // BRING FRONT / SEND BACK
+  // =========================================================
 
   const handleBringFrontBack = (
     type: string
   ) => {
-
-    if (!excalidrawAPI || !selectedElement) {
-      return
+    if (
+      !excalidrawAPI ||
+      !selectedElement
+    ) {
+      return;
     }
 
-
     const elements =
-      excalidrawAPI.getSceneElements()
-
+      excalidrawAPI.getSceneElements();
 
     const selected =
       elements.find(
         (element) =>
-          element.id === selectedElement.id
-      )
-
+          element.id ===
+          selectedElement.id
+      );
 
     if (!selected) {
-      return
+      return;
     }
-
 
     const remainingElements =
       elements.filter(
         (element) =>
-          element.id !== selectedElement.id
-      )
-
+          element.id !==
+          selectedElement.id
+      );
 
     if (type === "front") {
-
       excalidrawAPI.updateScene({
-
         elements: [
-          // @ts-ignore
           ...remainingElements,
-          selected
-        ]
-
-      })
-
+          selected,
+        ],
+      });
     } else {
-
       excalidrawAPI.updateScene({
-
         elements: [
           selected,
-          // @ts-ignore
-          ...remainingElements
-        ]
-
-      })
-
+          ...remainingElements,
+        ],
+      });
     }
+  };
 
-  }
-
+  // =========================================================
+  // BOUND TEXT
+  // =========================================================
 
   const boundTextElement = (() => {
-
-    if (!excalidrawAPI || !selectedElement) {
-      return null
+    if (
+      !excalidrawAPI ||
+      !selectedElement
+    ) {
+      return null;
     }
-
 
     const textId =
       selectedElement.boundElements?.find(
         (bound: any) =>
           bound.type === "text"
-      )?.id
-
+      )?.id;
 
     if (!textId) {
-      return null
+      return null;
     }
-
 
     return (
       excalidrawAPI
@@ -529,93 +550,110 @@ const Whiteboard = ({
           (element: any) =>
             element.id === textId
         ) ?? null
-    )
+    );
+  })();
 
-  })()
+  // =========================================================
+  // TEXT PROPERTY CHANGE
+  // =========================================================
 
-  const handleTextPropertyChange = async (
-    property: string,
-    value: any
-  ) => {
-
-    if (!excalidrawAPI || !boundTextElement) {
-      return
-    }
-
-
-    await updateBoundText(
-      excalidrawAPI,
-      selectedElement,
-      boundTextElement,
-      {
-        [property]: value,
+  const handleTextPropertyChange =
+    async (
+      property: string,
+      value: any
+    ) => {
+      if (
+        !excalidrawAPI ||
+        !boundTextElement
+      ) {
+        return;
       }
-    )
 
+      await updateBoundText(
+        excalidrawAPI,
+        selectedElement,
+        boundTextElement,
+        {
+          [property]: value,
+        }
+      );
 
-    // Nudge selection so toolbar
-    // re-reads the new value
+      // Nudge selection so toolbar
+      // re-reads the new value
+      setSelectedElement({
+        ...selectedElement,
+      });
+    };
 
-    setSelectedElement({
-      ...selectedElement
-    })
-
-  }
+  // =========================================================
+  // FLOATING POSITION
+  // =========================================================
 
   const floatingPosition =
-    getFloatingPosition()
+    getFloatingPosition();
 
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
-
-    <div className={readOnly ? "h-screen" : "h-[90vh]"}>
-
+    <div
+      className={
+        readOnly
+          ? "h-screen"
+          : "h-[90vh]"
+      }
+    >
       <Excalidraw
-            initialData={
-                initialCanvas
-                ? {
-                    elements: initialCanvas.elements || [],
-                    files: initialCanvas.files || undefined,
-                    }
-                : undefined
+      initialData={
+        readOnly && initialCanvas
+          ? {
+              elements: initialCanvas.elements || [],
+              files: initialCanvas.files || undefined,
             }
-            onChange={handleCanvasChange}
-            //@ts-ignore
-            excalidrawAPI={(api) => {
-                setExcalidrawAPI(api);
-                onApiReady(api);
-            }}
-            viewModeEnabled={readOnly}
-            theme={resolvedTheme === "dark" ? "dark" : "light"}
-            />
+          : undefined
+      }
+        onChange={handleCanvasChange}
+        // @ts-ignore
+        excalidrawAPI={(api) => {
+          setExcalidrawAPI(api);
+          onApiReady(api);
+        }}
+        viewModeEnabled={readOnly}
+        theme={
+          resolvedTheme === "dark"
+            ? "dark"
+            : "light"
+        }
+      />
 
-
+      {/* ================================================= */}
       {/* LEFT TOOLBAR */}
+      {/* ================================================= */}
 
-      {!readOnly &&(<div className="
-        absolute
-        left-4
-        top-1/2
-        z-50
-        -translate-y-1/2
-        flex
-        flex-col
-        gap-1
-        rounded-2xl
-        bg-white
-        dark:bg-gray-900
-        border
-        p-1.5
-        shadow-xl
-      ">
-
-        {
-          tools.map((tool) => {
-
-            const Icon = tool.icon
+      {!readOnly && (
+        <div
+          className="
+            absolute
+            left-4
+            top-1/2
+            z-50
+            -translate-y-1/2
+            flex
+            flex-col
+            gap-1
+            rounded-2xl
+            bg-white
+            dark:bg-gray-900
+            border
+            p-1.5
+            shadow-xl
+          "
+        >
+          {tools.map((tool) => {
+            const Icon = tool.icon;
 
             return (
-
               <button
                 key={tool.name}
                 className={`
@@ -629,7 +667,8 @@ const Whiteboard = ({
                   hover:bg-primary/20
                   hover:cursor-pointer
                   ${
-                    activeTool === tool.name
+                    activeTool ===
+                    tool.name
                       ? "bg-primary/10"
                       : ""
                   }
@@ -638,94 +677,97 @@ const Whiteboard = ({
                   changeTool(tool.name)
                 }
               >
-
                 <Icon
                   size={"19"}
                   className={tool.color}
                 />
-
               </button>
-
-            )
-
-          })
-        }
-
-      </div>)}
-
-
-      {/* FLOATING PROPERTIES */}
-
-      {!readOnly && (<FloatingProperties
-        selectedElement={selectedElement}
-        position={floatingPosition}
-
-        onPropertyChange={(
-          property,
-          value
-        ) =>
-          handlePropertyChange(
-            property,
-            value
-          )
-        }
-
-        onDelete={() =>
-          handleDeleteElement()
-        }
-
-        onDuplicate={() =>
-          handleDuplicateElement()
-        }
-
-        onBringToFront={() =>
-          handleBringFrontBack("front")
-        }
-
-        onSendToBack={() =>
-          handleBringFrontBack("back")
-        }
-
-        onTextPropertyChange={
-          handleTextPropertyChange
-        }
-
-        boundText={boundTextElement}
-      />)}
-
-
-      {/* CANVAS DOCK */}
-
-      {!readOnly &&(<CanvasDock
-        excalidrawApi={excalidrawAPI}
-        aiOpen={showAiSidebar}
-        onToggleAi={() =>
-          setShowAiSidebar(
-            (open) => !open
-          )
-        }
-      />)}
-
-
-      {/* AI SIDEBAR */}
-
-      {!readOnly && showAiSidebar && (
-
-        <AIFloatingSidebar
-          excalidrawAPI={excalidrawAPI}
-
-          onClose={() =>
-            setShowAiSidebar(false)
-          }
-        />
-
+            );
+          })}
+        </div>
       )}
 
+      {/* ================================================= */}
+      {/* FLOATING PROPERTIES */}
+      {/* ================================================= */}
+
+      {!readOnly && (
+        <FloatingProperties
+          selectedElement={
+            selectedElement
+          }
+          position={
+            floatingPosition
+          }
+          onPropertyChange={(
+            property,
+            value
+          ) =>
+            handlePropertyChange(
+              property,
+              value
+            )
+          }
+          onDelete={() =>
+            handleDeleteElement()
+          }
+          onDuplicate={() =>
+            handleDuplicateElement()
+          }
+          onBringToFront={() =>
+            handleBringFrontBack(
+              "front"
+            )
+          }
+          onSendToBack={() =>
+            handleBringFrontBack(
+              "back"
+            )
+          }
+          onTextPropertyChange={
+            handleTextPropertyChange
+          }
+          boundText={
+            boundTextElement
+          }
+        />
+      )}
+
+      {/* ================================================= */}
+      {/* CANVAS DOCK */}
+      {/* ================================================= */}
+
+      {!readOnly && (
+        <CanvasDock
+          excalidrawApi={
+            excalidrawAPI
+          }
+          aiOpen={showAiSidebar}
+          onToggleAi={() =>
+            setShowAiSidebar(
+              (open) => !open
+            )
+          }
+        />
+      )}
+
+      {/* ================================================= */}
+      {/* AI SIDEBAR */}
+      {/* ================================================= */}
+
+      {!readOnly &&
+        showAiSidebar && (
+          <AIFloatingSidebar
+            excalidrawAPI={
+              excalidrawAPI
+            }
+            onClose={() =>
+              setShowAiSidebar(false)
+            }
+          />
+        )}
     </div>
+  );
+};
 
-  )
-
-}
-
-
-export default Whiteboard
+export default Whiteboard;
