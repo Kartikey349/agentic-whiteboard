@@ -4,9 +4,6 @@ import { and, eq } from "drizzle-orm";
 import crypto from "crypto";
 import { db, projects, projectShares } from "@/db";
 
-// ======================================================
-// POST - Create / Enable Share
-// ======================================================
 
 export async function POST(req: Request) {
   try {
@@ -80,7 +77,7 @@ export async function POST(req: Request) {
         .where(eq(projectShares.projectId, projectId))
         .returning();
 
-      const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL}/share/${share.shareToken}`;
+      const shareUrl = `${process.env.APP_URL}/share/${share.shareToken}`;
 
       return NextResponse.json({
         success: true,
@@ -104,7 +101,7 @@ export async function POST(req: Request) {
       })
       .returning();
 
-    const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL}/share/${shareToken}`;
+    const shareUrl = `${process.env.APP_URL}/share/${shareToken}`;
 
     return NextResponse.json({
       success: true,
