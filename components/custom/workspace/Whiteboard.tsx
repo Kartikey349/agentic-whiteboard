@@ -94,12 +94,20 @@ const tools = [
 type Props = {
   onApiReady: (api: ExcalidrawImperativeAPI) => void
   onSaveReady: (save: () => Promise<void>) => void
+  readOnly?: boolean;
+  initialCanvas?: {
+    elements: any[];
+    appState?: any;
+    files?: any;
+  };
 }
 
 
 const Whiteboard = ({
   onApiReady,
-  onSaveReady
+  onSaveReady,
+  readOnly,
+  initialCanvas,
 }: Props) => {
 
   const [excalidrawAPI, setExcalidrawAPI] =
@@ -139,6 +147,7 @@ const Whiteboard = ({
     files: any
   ) => {
 
+    if (readOnly) return;
     setCanvasState(appState)
 
 
@@ -553,32 +562,37 @@ const Whiteboard = ({
 
   }
 
-
   const floatingPosition =
     getFloatingPosition()
 
 
   return (
 
-    <div className="h-[92vh]">
+    <div className={readOnly ? "h-screen" : "h-[92vh]"}>
 
       <Excalidraw
-        onChange={handleCanvasChange}
-        //@ts-ignore
-        excalidrawAPI={(api) => {
-
-          setExcalidrawAPI(api)
-
-          onApiReady(api)
-
-        }}
-         theme={resolvedTheme === "dark" ? "dark" : "light"}
-      />
+            initialData={
+                initialCanvas
+                ? {
+                    elements: initialCanvas.elements || [],
+                    files: initialCanvas.files || undefined,
+                    }
+                : undefined
+            }
+            onChange={handleCanvasChange}
+            //@ts-ignore
+            excalidrawAPI={(api) => {
+                setExcalidrawAPI(api);
+                onApiReady(api);
+            }}
+            viewModeEnabled={readOnly}
+            theme={resolvedTheme === "dark" ? "dark" : "light"}
+            />
 
 
       {/* LEFT TOOLBAR */}
 
-      <div className="
+      {!readOnly &&(<div className="
         absolute
         left-4
         top-1/2
@@ -637,12 +651,12 @@ const Whiteboard = ({
           })
         }
 
-      </div>
+      </div>)}
 
 
       {/* FLOATING PROPERTIES */}
 
-      <FloatingProperties
+      {!readOnly && (<FloatingProperties
         selectedElement={selectedElement}
         position={floatingPosition}
 
@@ -677,12 +691,12 @@ const Whiteboard = ({
         }
 
         boundText={boundTextElement}
-      />
+      />)}
 
 
       {/* CANVAS DOCK */}
 
-      <CanvasDock
+      {!readOnly &&(<CanvasDock
         excalidrawApi={excalidrawAPI}
         aiOpen={showAiSidebar}
         onToggleAi={() =>
@@ -690,12 +704,12 @@ const Whiteboard = ({
             (open) => !open
           )
         }
-      />
+      />)}
 
 
       {/* AI BUTTON */}
 
-      <div className="
+      {!readOnly && (<div className="
         absolute
         right-15
         bottom-3.5
@@ -717,12 +731,12 @@ const Whiteboard = ({
 
         </Button>
 
-      </div>
+      </div>)}
 
 
       {/* AI SIDEBAR */}
 
-      {showAiSidebar && (
+      {!readOnly && showAiSidebar && (
 
         <AIFloatingSidebar
           excalidrawAPI={excalidrawAPI}

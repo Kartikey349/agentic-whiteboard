@@ -38,5 +38,32 @@ export const WhiteboardData = pgTable("whiteboardData", {
   updateAt: timestamp("updated_at").defaultNow().notNull()
 })
 
+export const projectShares = pgTable("project_shares", {
+  id: serial("id").primaryKey(),
+
+  projectId: varchar("project_id")
+    .notNull()
+    .unique()
+    .references(() => projects.projectId, {
+      onDelete: "cascade",
+    }),
+
+  shareToken: varchar("share_token")
+    .notNull()
+    .unique(),
+
+  isActive: boolean("is_active")
+    .default(false)
+    .notNull(),
+
+  permission: varchar("permission")
+    .default("view")
+    .notNull(),
+
+  createdAt: timestamp("created_at")
+    .defaultNow()
+    .notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

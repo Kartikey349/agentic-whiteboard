@@ -3,12 +3,29 @@
 import SmartDoc from "@/components/custom/workspace/SmartDoc";
 import Whiteboard from "@/components/custom/workspace/Whiteboard";
 import WorkspaceHeader from "@/components/custom/workspace/WorkspaceHeader";
+
 import { exportToBlob } from "@excalidraw/excalidraw";
 import { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+
 import axios from "axios";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+import { Button } from "@/components/ui/button";
+
+import {
+  Check,
+  Copy,
+  MessageCircle,
+} from "lucide-react";
 
 const sanitizeAppState = (appState: any) => {
   if (!appState) {
@@ -32,7 +49,6 @@ const sanitizeAppState = (appState: any) => {
   };
 };
 
-
 const Workspace = () => {
   const [activeTab, setActiveTab] =
     useState("Whiteboard");
@@ -41,31 +57,38 @@ const Workspace = () => {
     useState<ExcalidrawImperativeAPI | null>(null);
 
   const [saveWhiteboard, setSaveWhiteboard] =
-  useState<(() => Promise<void>) | null>(null);
+    useState<(() => Promise<void>) | null>(null);
 
   const [projectName, setProjectName] =
     useState<string | undefined>(undefined);
 
+  const [sharing, setSharing] =
+    useState(false);
+
+  // Share dialog
+  const [shareUrl, setShareUrl] =
+    useState<string | null>(null);
+
+  const [shareDialogOpen, setShareDialogOpen] =
+    useState(false);
+
+  const [copied, setCopied] =
+    useState(false);
+
   const { projectId } = useParams();
 
- 
-  const GetWhiteboardData = async () => {
+const GetWhiteboardData = async () => {
     if (!projectId || !api) return;
 
     try {
-
       const result = await axios.get(
-        "/api/whiteboard?projectId=" +
-          projectId
+        "/api/whiteboard?projectId=" + projectId
       );
 
-      const canvas =
-        result.data?.canvas;
-
+      const canvas = result.data?.canvas;
 
       setProjectName(
-        result.data?.userProject
-          ?.projectName ??
+        result.data?.userProject?.projectName ??
           "Untitled board"
       );
 
@@ -74,26 +97,15 @@ const Workspace = () => {
         canvas?.elements ??
         [];
 
-      const storedAppState =
-        sanitizeAppState(
-          canvas?.appState
-        );
-
-
       if (canvas?.files) {
-        const files =
-          Object.values(
-            canvas.files
-          );
+        const files = Object.values(canvas.files);
 
         api.addFiles(files as any);
       }
 
       api.updateScene({
-        elements: storedElements
+        elements: storedElements,
       });
-
-
     } catch (error) {
       console.error(
         "FAILED TO LOAD WHITEBOARD:",
@@ -112,58 +124,208 @@ const Workspace = () => {
     if (!api) return;
 
     const blob = await exportToBlob({
-      elements:
-        api.getSceneElements(),
+      elements: api.getSceneElements(),
 
       appState: {
         ...api.getAppState(),
-
         exportBackground: true,
       },
 
-      files:
-        api.getFiles(),
+      files: api.getFiles(),
 
       mimeType: "image/png",
-
       quality: 1,
     });
 
-    const url =
-      URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
 
-    const link =
-      document.createElement("a");
+    const link = document.createElement("a");
 
     link.href = url;
-
-    link.download =
-      "whiteboard.png";
+    link.download = "whiteboard.png";
 
     link.click();
 
     URL.revokeObjectURL(url);
   };
 
+  const handleShare = async () => {
+    if (!projectId || sharing) return;
+
+    try {
+      setSharing(true);
+
+      const result = await axios.post(
+        "/api/share",
+        {
+          projectId,
+        }
+      );
+
+      const url = result.data?.shareUrl;
+
+      if (!url) {
+        throw new Error(
+          "Share URL was not returned"
+        );
+      }
+
+      setShareUrl(url);
+      setShareDialogOpen(true);
+
+      // Automatically copy the share link
+      try {
+        await navigator.clipboard.writeText(url);
+
+        setCopied(true);
+
+        setTimeout(() => {
+          setCopied(false);
+        }, 2000);
+      } catch (clipboardError) {
+        console.error(
+          "FAILED TO COPY SHARE LINK:",
+          clipboardError
+        );
+      }
+    } catch (error: any) {
+      console.error(
+        "FAILED TO CREATE SHARE LINK:",
+        error
+      );
+
+      console.log(
+        "SERVER ERROR:",
+        error?.response?.data
+      );
+
+      alert(
+        error?.response?.data?.error ??
+          "Failed to create share link"
+      );
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const handleCopyShareLink = async () => {
+    if (!shareUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(
+        shareUrl
+      );
+
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (error) {
+      console.error(
+        "FAILED TO COPY SHARE LINK:",
+        error
+      );
+    }
+  };
+
+  const handleWhatsAppShare = () => {
+    if (!shareUrl) return;
+
+    const message =
+      `Check out my whiteboard:\n${shareUrl}`;
+
+    const whatsappUrl =
+      `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+    window.open(
+      whatsappUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
 
   return (
     <div>
       <WorkspaceHeader
-        selectedTab={(value: string) => setActiveTab(value)}
+        selectedTab={(value: string) =>
+          setActiveTab(value)
+        }
         onExport={handleExportImage}
-        onSave={() => saveWhiteboard?.()}
+        onSave={() =>
+          saveWhiteboard?.()
+        }
+        onShare={handleShare}
+        isSharing={sharing}
         projectName={projectName ?? ""}
-        
       />
 
       {activeTab === "Whiteboard" ? (
         <Whiteboard
-           onApiReady={(api) => setApi(api)}
-          onSaveReady={(save) => setSaveWhiteboard(() => save)}
+          onApiReady={(api) =>
+            setApi(api)
+          }
+          onSaveReady={(save) =>
+            setSaveWhiteboard(
+              () => save
+            )
+          }
+          readOnly= {false}
         />
       ) : (
         <SmartDoc />
       )}
+
+      {/* Share Dialog */}
+      <Dialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Share project
+            </DialogTitle>
+
+            <DialogDescription>
+              Anyone with this link can view
+              this whiteboard.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Share Link */}
+            <div className="flex items-center gap-2 rounded-md border p-2">
+              <input
+                value={shareUrl ?? ""}
+                readOnly
+                className="min-w-0 flex-1 bg-transparent px-2 text-sm outline-none"
+              />
+
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleCopyShareLink}
+              >
+                {copied ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            {/* WhatsApp */}
+            <Button
+              className="w-full"
+              onClick={handleWhatsAppShare}
+            >
+              <MessageCircle className="mr-2 h-4 w-4" />
+              Share on WhatsApp
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

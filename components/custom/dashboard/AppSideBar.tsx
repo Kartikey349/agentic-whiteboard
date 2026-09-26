@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
 import Image from "next/image"
-import { Archive, LayoutGrid, Settings, Sparkles, Users } from "lucide-react"
+import { Archive, LayoutGrid, Users } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useUser } from "@clerk/nextjs"
 import CreateNewBoardDialogue from "./CreateNewBoardDialogue"
@@ -40,10 +40,12 @@ export function AppSidebar() {
                 <span>My Files</span>
             </SidebarMenuButton></Link>
 
-            <SidebarMenuButton className="p-5 mt-2" isActive={path === "/shared-file"}>
-                <Users />
-                <span>Shared</span>
-            </SidebarMenuButton>
+            <Link href={"/dashboard/shared"}>
+                <SidebarMenuButton className="p-5 mt-2" isActive={path === "/shared-file"}>
+                    <Users />
+                    <span>Shared</span>
+                </SidebarMenuButton>
+            </Link>
 
             <Link href={"/dashboard/archived"}><SidebarMenuButton className="p-5 mt-2" isActive={path === "/dashboard/archived"}>
                 <Archive />
