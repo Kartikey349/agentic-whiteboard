@@ -1,6 +1,4 @@
 "use client";
-
-import SmartDoc from "@/components/custom/workspace/SmartDoc";
 import Whiteboard from "@/components/custom/workspace/Whiteboard";
 import WorkspaceHeader from "@/components/custom/workspace/WorkspaceHeader";
 
@@ -50,8 +48,6 @@ const sanitizeAppState = (appState: any) => {
 };
 
 const Workspace = () => {
-  const [activeTab, setActiveTab] =
-    useState("Whiteboard");
 
   const [api, setApi] =
     useState<ExcalidrawImperativeAPI | null>(null);
@@ -78,41 +74,54 @@ const Workspace = () => {
   const { projectId } = useParams();
 
 const GetWhiteboardData = async () => {
-    if (!projectId || !api) return;
+  if (!projectId || !api) return;
 
-    try {
-      const result = await axios.get(
-        "/api/whiteboard?projectId=" + projectId
-      );
+  try {
+    const result = await axios.get(
+      "/api/whiteboard?projectId=" + projectId
+    );
 
-      const canvas = result.data?.canvas;
+    const canvas = result.data?.canvas;
 
-      setProjectName(
-        result.data?.userProject?.projectName ??
-          "Untitled board"
-      );
+    setProjectName(
+      result.data?.userProject?.projectName ?? "Untitled board"
+    );
 
-      const storedElements =
-        canvas?.element ??
-        canvas?.elements ??
-        [];
+    const storedElements =
+      canvas?.element ??
+      canvas?.elements ??
+      [];
 
-      if (canvas?.files) {
-        const files = Object.values(canvas.files);
+    // Load files first
+    if (canvas?.files) {
+      const files = Object.values(canvas.files);
 
-        api.addFiles(files as any);
-      }
-
-      api.updateScene({
-        elements: storedElements,
-      });
-    } catch (error) {
-      console.error(
-        "FAILED TO LOAD WHITEBOARD:",
-        error
-      );
+      await api.addFiles(files as any);
     }
-  };
+
+    // Load elements
+    api.updateScene({
+      elements: storedElements,
+    });
+
+    // Wait for Excalidraw to render the loaded elements
+    if (storedElements.length > 0) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          api.scrollToContent(undefined, {
+            fitToViewport: true,
+            viewportZoomFactor: 0.8,
+          });
+        });
+      });
+    }
+  } catch (error) {
+    console.error(
+      "FAILED TO LOAD WHITEBOARD:",
+      error
+    );
+  }
+};
 
   useEffect(() => {
     if (!projectId || !api) return;
@@ -120,7 +129,7 @@ const GetWhiteboardData = async () => {
     GetWhiteboardData();
   }, [projectId, api]);
 
-  const handleExportImage = async () => {
+const handleExportImage = async () => {
     if (!api) return;
 
     const blob = await exportToBlob({
@@ -248,9 +257,7 @@ const GetWhiteboardData = async () => {
   return (
     <div>
       <WorkspaceHeader
-        selectedTab={(value: string) =>
-          setActiveTab(value)
-        }
+        selectedTab={"Whiteboard"}
         onExport={handleExportImage}
         onSave={() =>
           saveWhiteboard?.()
@@ -260,7 +267,6 @@ const GetWhiteboardData = async () => {
         projectName={projectName ?? ""}
       />
 
-      {activeTab === "Whiteboard" ? (
         <Whiteboard
           onApiReady={(api) =>
             setApi(api)
@@ -272,9 +278,7 @@ const GetWhiteboardData = async () => {
           }
           readOnly= {false}
         />
-      ) : (
-        <SmartDoc />
-      )}
+      
 
       {/* Share Dialog */}
       <Dialog

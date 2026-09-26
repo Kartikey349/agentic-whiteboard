@@ -568,7 +568,7 @@ const Whiteboard = ({
 
   return (
 
-    <div className={readOnly ? "h-screen" : "h-[92vh]"}>
+    <div className={readOnly ? "h-screen" : "h-[90vh]"}>
 
       <Excalidraw
             initialData={
@@ -705,33 +705,6 @@ const Whiteboard = ({
           )
         }
       />)}
-
-
-      {/* AI BUTTON */}
-
-      {!readOnly && (<div className="
-        absolute
-        right-15
-        bottom-3.5
-        z-50
-      ">
-
-        <Button
-          size={"lg"}
-          onClick={() =>
-            setShowAiSidebar(
-              !showAiSidebar
-            )
-          }
-        >
-
-          <Sparkles />
-
-          AI
-
-        </Button>
-
-      </div>)}
 
 
       {/* AI SIDEBAR */}
